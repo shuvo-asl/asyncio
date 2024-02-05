@@ -19,9 +19,9 @@ import mysql.connector
 #         while True:
 #             data = await self.fetch_data()
 #             for json_msg in data:
-#                 if self.aircraft_list.get(json_msg['hex_address']) != json_msg:
-#                     self.aircraft_list[json_msg['hex_address']] = json_msg
-#                     yield json_msg
+                # if self.aircraft_list.get(json_msg['hex_address']) != json_msg:
+                #     self.aircraft_list[json_msg['hex_address']] = json_msg
+                #     yield json_msg
 #             await asyncio.sleep(1)  # Adjust the sleep interval as needed
 
 # class StateUpdater:
