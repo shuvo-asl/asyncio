@@ -31,16 +31,16 @@ class Jetvision:
         """ To process data """
         while True:
             data = await self.fetch_data()
-            print("Previous Flight: "+str(len(self.aircraft_list)))
-            print("Current Flight Stream: "+str(len(data)))
+            # print("Previous Flight: "+str(len(self.aircraft_list)))
+            # print("Current Flight Stream: "+str(len(data)))
             numberOfUpdatedData = 0;
 
             for json_msg in data:
                 if self.aircraft_list.get(json_msg['hex']) != json_msg:
                     self.aircraft_list[json_msg['hex']] = json_msg
                     numberOfUpdatedData = numberOfUpdatedData + 1
-            print("Updated Data: "+str(numberOfUpdatedData))
-            # print(self.aircraft_list)
+            # print("Updated Data: "+str(numberOfUpdatedData))
+            print(self.aircraft_list)
             await asyncio.sleep(1)
 
 if __name__ == "__main__":
