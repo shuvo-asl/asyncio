@@ -1,49 +1,58 @@
-""" ASL Systems Ltd 2024
-    Author: Shuvo
-    Purpose: Demonstrate asyncio techniques
+import aiohttp
+import json
+import asyncio
+
+"""
+    Reference link for this codebase:
+    https://www.pythontutorial.net/python-concurrency/python-asyncio-gather/
+    
 """
 
-# Library modules
-import asyncio
-import json
-
-# Third party modules
-import aiohttp
-# Local Modules
-
-class Jetvision:
-
-
-    def __init__(self, sensor_name, sensor_url):
-        self.sensor_name = sensor_name
+class Receiver:
+    def __init__(self, sensor_url, request_period):
         self.sensor_url = sensor_url
-        self.aircraft_list = {}
+        self.request_period = request_period
     
+    def _set_online_status(self, is_online):
+        if is_online:
+            print("|-----------------------------------------------------------------------|")
+            print("| " + self.sensor_url + " is online")
+        else:
+            print(self.sensor_url + " is offline")
+            print("|-----------------------------------------------------------------------|")
     
-    async def fetch_data(self):
-        """ To receive data from the sensor """
-        async with aiohttp.ClientSession() as session:
-                async with session.get(self.sensor_url) as response:
-                    data = await response.json()
-                    return data
+    async def receive(self):
+        """ Periodically pull sensor data from aircraftlist.json """
+
+        remote_sensor_url = "http://" + self.sensor_url + "/aircraftlist.json"
+
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(5)) as session:
+            while True:
+                try:
+                    async with session.get(remote_sensor_url) as response:
+                        if response.status == 200:
+                            self._set_online_status(True)
+                            data_json = json.loads(await response.text())
+                            # check that response is in fact json
+                            for line in data_json:
+                                yield line
+                        else:
+                            self._set_online_status(False)
+                except TimeoutError:
+                    self._set_online_status(False)
+                await asyncio.sleep(self.request_period)
 
     async def process(self):
-        """ To process data """
-        while True:
-            data = await self.fetch_data()
-            # print("Previous Flight: "+str(len(self.aircraft_list)))
-            # print("Current Flight Stream: "+str(len(data)))
-            numberOfUpdatedData = 0;
+        """Get and process incoming JSON"""
+        async for line in self.receive():
+            print(f"|CALL SIGN {line['fli']} ------ LAT {line['lat']} ------ LON {line['lon']}")
 
-            for json_msg in data:
-                if self.aircraft_list.get(json_msg['hex']) != json_msg:
-                    self.aircraft_list[json_msg['hex']] = json_msg
-                    numberOfUpdatedData = numberOfUpdatedData + 1
-            # print("Updated Data: "+str(numberOfUpdatedData))
-            print(self.aircraft_list)
-            await asyncio.sleep(1)
+async def main():
+    """Instantiate receiver and run forever"""
+    dhaka = Receiver("192.168.30.27", 1)
+    chittagong = Receiver("192.168.101.3", 1)
+    await asyncio.gather(dhaka.process(),chittagong.process())
+    # asyncio.run(dhaka.process())
 
 if __name__ == "__main__":
-    dhaka_sensor = "http://192.168.30.27/aircraftlist.json"
-    dhaka = Jetvision("Dhaka",dhaka_sensor)
-    asyncio.run(dhaka.process())
+    asyncio.run(main())
