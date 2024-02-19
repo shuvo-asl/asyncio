@@ -9,9 +9,10 @@ import asyncio
 """
 
 class Receiver:
-    def __init__(self, sensor_url, request_period):
+    def __init__(self, sensor_url, request_period,queue):
         self.sensor_url = sensor_url
         self.request_period = request_period
+        self.output_queue = queue
     
     def _set_online_status(self, is_online):
         if is_online:
@@ -45,12 +46,14 @@ class Receiver:
     async def process(self):
         """Get and process incoming JSON"""
         async for line in self.receive():
+            output_queue.put(line)
             print(f"|CALL SIGN {line['fli']} ------ LAT {line['lat']} ------ LON {line['lon']}")
 
 async def main():
     """Instantiate receiver and run forever"""
-    dhaka = Receiver("192.168.30.27", 1)
-    chittagong = Receiver("192.168.101.3", 1)
+    json_queue = asyncio.Queue(100)
+    dhaka = Receiver("192.168.30.27", 1, json_queue)
+    chittagong = Receiver("192.168.101.3", 1, json_queue)
     await asyncio.gather(dhaka.process(),chittagong.process())
     # asyncio.run(dhaka.process())
 
