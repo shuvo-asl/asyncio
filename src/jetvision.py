@@ -46,15 +46,33 @@ class Receiver:
     async def process(self):
         """Get and process incoming JSON"""
         async for line in self.receive():
-            output_queue.put(line)
-            print(f"|CALL SIGN {line['fli']} ------ LAT {line['lat']} ------ LON {line['lon']}")
+            await self.output_queue.put(line)
+            # print(f"|CALL SIGN {line['fli']} ------ LAT {line['lat']} ------ LON {line['lon']}")
+
+
+class AircraftListFilter():
+    """ 
+    Responsible to filter stream data
+    """
+
+    def __init__(self, input_stream):
+        self.input_stream = input_stream
+
+    async def process(self):
+        while True:
+            # Dequeue data from the queue
+            data = await self.input_stream.get()
+            print(data)
 
 async def main():
     """Instantiate receiver and run forever"""
     json_queue = asyncio.Queue(100)
     dhaka = Receiver("192.168.30.27", 1, json_queue)
     chittagong = Receiver("192.168.101.3", 1, json_queue)
-    await asyncio.gather(dhaka.process(),chittagong.process())
+
+    _filter = AircraftListFilter(json_queue)
+
+    await asyncio.gather(dhaka.process(),chittagong.process(), _filter.process())
     # asyncio.run(dhaka.process())
 
 if __name__ == "__main__":
